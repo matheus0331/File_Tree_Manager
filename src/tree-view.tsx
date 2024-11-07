@@ -213,21 +213,27 @@ export default function TreeViewDragDrop() {
     targetNode: TreeNode,
     isLeftToRight: boolean
   ) => {
-    if (targetNode.type === "file") return;
+    // if (targetNode.type === "file") return;
     const sourceTree = isLeftToRight ? leftTree : rightTree;
     const targetTree = isLeftToRight ? rightTree : leftTree;
 
-    // if (targetNode.type === "file") {
-    //   targetTree.filter((node) => {
-    //     return node.children?.map((child) => child.id === targetNode.id);
-    //   });
-    // }
+    let parentNode: TreeNode | null;
+
+    if (targetNode.type === "file") {
+      parentNode = findParentById(targetTree, targetNode.id);
+    } else {
+      parentNode = targetNode;
+    }
+
+    // draggedNode = { ...draggedNode, id: "file" + Date.now() };
+
+    // console.log(draggedNode);
 
     const removeNode = (nodes: TreeNode[]): [TreeNode[], TreeNode | null] => {
       let removedNode: TreeNode | null = null;
       nodes.filter((node) => {
         if (node.id === draggedNode.id) {
-          removedNode = node;
+          removedNode = { ...node, id: "file" + Date.now() };
           return false;
         }
         if (node.children) {
@@ -264,8 +270,8 @@ export default function TreeViewDragDrop() {
 
     const [newSourceTree, removedNode] = removeNode(sourceTree);
 
-    if (removedNode) {
-      const newTargetTree = addNode(targetTree, targetNode.id, removedNode);
+    if (removedNode && parentNode) {
+      const newTargetTree = addNode(targetTree, parentNode.id, removedNode);
 
       if (isLeftToRight) {
         setLeftTree(newSourceTree);
@@ -275,6 +281,25 @@ export default function TreeViewDragDrop() {
         setRightTree(newSourceTree);
       }
     }
+  };
+
+  const findParentById = (
+    nodes: TreeNode[],
+    fileId: string,
+    parent: TreeNode | null = null
+  ): TreeNode | null => {
+    for (const node of nodes) {
+      if (node.id === fileId) {
+        return parent; // Found the file, return the parent
+      }
+      if (node.children) {
+        const result = findParentById(node.children, fileId, node);
+        if (result) {
+          return result; // Return the found parent
+        }
+      }
+    }
+    return null; // File not found in this path
   };
 
   const deleteNode = (nodeId: string, isLeft: boolean) => {
