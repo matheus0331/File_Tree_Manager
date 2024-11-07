@@ -208,13 +208,88 @@ export default function TreeViewDragDrop() {
   const [leftTree, setLeftTree] = useState<TreeNode[]>(initialLeftTree);
   const [rightTree, setRightTree] = useState<TreeNode[]>(initialRightTree);
 
+  // const moveNode = (
+  //   draggedNode: TreeNode,
+  //   targetNode: TreeNode,
+  //   isLeftToRight: boolean
+  // ) => {
+  //   // if (targetNode.type === "file") return;
+  //   const sourceTree = isLeftToRight ? leftTree : rightTree;
+  //   const targetTree = isLeftToRight ? rightTree : leftTree;
+  //   // const targetTree = isLeftToRight
+  //   //   ? isNodeInTree(leftTree, targetNode)
+  //   //     ? rightTree
+  //   //     : leftTree
+  //   //   : leftTree;
+  //   // console.log(isNodeInTree(leftTree, targetNode), targetTree);
+
+  //   let parentNode: TreeNode | null;
+
+  //   if (targetNode.type === "file") {
+  //     parentNode = findParentById(targetTree, targetNode.id);
+  //   } else {
+  //     parentNode = targetNode;
+  //   }
+
+  //   const removeNode = (nodes: TreeNode[]): [TreeNode[], TreeNode | null] => {
+  //     let removedNode: TreeNode | null = null;
+  //     nodes.filter((node) => {
+  //       if (node.id === draggedNode.id) {
+  //         removedNode = { ...node, id: "file" + Date.now() };
+  //         return false;
+  //       }
+  //       if (node.children) {
+  //         const [newChildren, removed] = removeNode(node.children);
+  //         node.children = newChildren;
+  //         if (removed) removedNode = removed;
+  //       }
+  //       return true;
+  //     });
+  //     return [nodes, removedNode];
+  //   };
+
+  //   const addNode = (
+  //     nodes: TreeNode[],
+  //     targetId: string,
+  //     nodeToAdd: TreeNode
+  //   ): TreeNode[] => {
+  //     return nodes.map((node) => {
+  //       if (node.id === targetId && node.type === "folder") {
+  //         return {
+  //           ...node,
+  //           children: [...(node.children || []), nodeToAdd],
+  //         };
+  //       }
+  //       if (node.children) {
+  //         return {
+  //           ...node,
+  //           children: addNode(node.children, targetId, nodeToAdd),
+  //         };
+  //       }
+  //       return node;
+  //     });
+  //   };
+
+  //   const [newSourceTree, removedNode] = removeNode(sourceTree);
+
+  //   if (removedNode && parentNode) {
+  //     const newTargetTree = addNode(targetTree, parentNode.id, removedNode);
+
+  //     if (isLeftToRight) {
+  //       setLeftTree(newSourceTree);
+  //       setRightTree(newTargetTree);
+  //     } else {
+  //       setLeftTree(newTargetTree);
+  //       setRightTree(newSourceTree);
+  //     }
+  //   }
+  // };
+
   const moveNode = (
     draggedNode: TreeNode,
     targetNode: TreeNode,
     isLeftToRight: boolean
   ) => {
-    // if (targetNode.type === "file") return;
-    const sourceTree = isLeftToRight ? leftTree : rightTree;
     const targetTree = isLeftToRight ? rightTree : leftTree;
 
     let parentNode: TreeNode | null;
@@ -225,26 +300,21 @@ export default function TreeViewDragDrop() {
       parentNode = targetNode;
     }
 
-    // draggedNode = { ...draggedNode, id: "file" + Date.now() };
-
-    // console.log(draggedNode);
-
-    const removeNode = (nodes: TreeNode[]): [TreeNode[], TreeNode | null] => {
-      let removedNode: TreeNode | null = null;
-      nodes.filter((node) => {
-        if (node.id === draggedNode.id) {
-          removedNode = { ...node, id: "file" + Date.now() };
-          return false;
-        }
-        if (node.children) {
-          const [newChildren, removed] = removeNode(node.children);
-          node.children = newChildren;
-          if (removed) removedNode = removed;
-        }
-        return true;
-      });
-      return [nodes, removedNode];
+    // Helper function to generate unique ids for a node and its children
+    const generateUniqueIds = (node: TreeNode): TreeNode => {
+      const newNodeId = `${node.id}_${Date.now()}`;
+      const newNode: TreeNode = {
+        ...node,
+        id: newNodeId,
+        children: node.children
+          ? node.children.map(generateUniqueIds)
+          : undefined,
+      };
+      return newNode;
     };
+
+    // Create a unique copy of the dragged node with new ids
+    const newNodeToAdd = generateUniqueIds(draggedNode);
 
     const addNode = (
       nodes: TreeNode[],
@@ -268,17 +338,15 @@ export default function TreeViewDragDrop() {
       });
     };
 
-    const [newSourceTree, removedNode] = removeNode(sourceTree);
+    // Add the copied node with unique ids to the target tree
+    if (parentNode) {
+      const newTargetTree = addNode(targetTree, parentNode.id, newNodeToAdd);
 
-    if (removedNode && parentNode) {
-      const newTargetTree = addNode(targetTree, parentNode.id, removedNode);
-
+      // Update the state based on the direction
       if (isLeftToRight) {
-        setLeftTree(newSourceTree);
         setRightTree(newTargetTree);
       } else {
         setLeftTree(newTargetTree);
-        setRightTree(newSourceTree);
       }
     }
   };
