@@ -84,6 +84,7 @@ const TreeNode: React.FC<{
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(node.name);
+  const [isHover, setIsHover] = useState(false);
 
   const [{ isDragging }, drag] = useDrag({
     type: "TREE_NODE",
@@ -124,6 +125,8 @@ const TreeNode: React.FC<{
         className={`flex justify-between items-center gap-2 hover:bg-[#6c6c6c] p-2 rounded ${
           isDragging ? "opacity-50" : ""
         }`}
+        onMouseEnter={() => setIsHover(true)}
+        onMouseLeave={() => setIsHover(false)}
       >
         <div
           className="flex gap-2 items-center cursor-pointer"
@@ -145,7 +148,7 @@ const TreeNode: React.FC<{
             <span>{node.name}</span>
           )}
         </div>
-        <div className="flex gap-1">
+        <div className={isHover ? "flex gap-1" : "hidden"}>
           {!isEditing && (
             <button
               className="text-white hover:text-red-500"
@@ -214,9 +217,15 @@ export default function TreeViewDragDrop() {
     const sourceTree = isLeftToRight ? leftTree : rightTree;
     const targetTree = isLeftToRight ? rightTree : leftTree;
 
+    // if (targetNode.type === "file") {
+    //   targetTree.filter((node) => {
+    //     return node.children?.map((child) => child.id === targetNode.id);
+    //   });
+    // }
+
     const removeNode = (nodes: TreeNode[]): [TreeNode[], TreeNode | null] => {
       let removedNode: TreeNode | null = null;
-      const newNodes = nodes.filter((node) => {
+      nodes.filter((node) => {
         if (node.id === draggedNode.id) {
           removedNode = node;
           return false;
@@ -228,7 +237,7 @@ export default function TreeViewDragDrop() {
         }
         return true;
       });
-      return [newNodes, removedNode];
+      return [nodes, removedNode];
     };
 
     const addNode = (
@@ -254,6 +263,7 @@ export default function TreeViewDragDrop() {
     };
 
     const [newSourceTree, removedNode] = removeNode(sourceTree);
+
     if (removedNode) {
       const newTargetTree = addNode(targetTree, targetNode.id, removedNode);
 
